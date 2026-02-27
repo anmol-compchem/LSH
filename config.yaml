@@ -1,0 +1,44 @@
+# =============================================================================
+# LSH-DP Configuration File
+# =============================================================================
+# Locality-Sensitive Hashing-Based Dataset Reduction for Deep Potential Training
+#
+# Reference:
+#   Anmol et al., J. Chem. Theory Comput. 2025, 21, 12, 6113–6120
+# =============================================================================
+
+# --- SOAP Descriptor Parameters ---
+soap:
+  r_cut: 6.0          # Cutoff radius (Angstrom)
+  n_max: 4            # Number of radial basis functions
+  l_max: 4            # Maximum angular momentum
+  sigma: 1.0          # Gaussian smearing width
+  rbf: gto            # Radial basis function type (gto or polynomial)
+  periodic: true      # Enable periodic boundary conditions
+  # species: null      # Auto-detected from trajectory; override as ["C", "H", "O"]
+
+# --- Hashing Parameters ---
+hashing:
+  n_components: 100   # Number of PCA components
+  n_hash: 100         # Number of hash functions
+  bin_width: 0.004    # Bin width for LSH partitioning
+  random_seed: 42     # Random seed for reproducibility
+
+# --- Input / Output ---
+io:
+  input_file: simulation.xyz   # Input trajectory (any ASE-readable format)
+  output_dir: results          # Output directory
+  format: auto                 # File format hint (auto, xyz, extxyz, lammpstrj, cif, etc.)
+  # cell: [15.82, 15.82, 30.76]  # Override unit cell (optional)
+  # pbc: true                     # Override PBC flag (optional)
+
+# --- Splitting ---
+split:
+  frames_per_file: 120         # Frames per output file
+
+# --- Execution ---
+device: auto                   # cpu, cuda, or auto
+deterministic: true            # Enforce deterministic behaviour
+# start_step: 1                # Start from step N (1-7)
+# end_step: 7                  # End at step N (1-7)
+# log_file: null               # Auto-generated if null

@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lshdp"
+version = "1.0.0"
+description = "Locality-Sensitive Hashing-Based Dataset Reduction for Deep Potential Training"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Anmol"},
+    {name = "Anuj Kumar Sirohi"},
+    {name = "Neha"},
+    {name = "Jayadeva"},
+    {name = "Sandeep Kumar"},
+    {name = "Tarak Karmakar"},
+]
+
+keywords = [
+    "molecular dynamics",
+    "locality sensitive hashing",
+    "deep potential",
+    "SOAP descriptors",
+    "dataset reduction",
+    "machine learning potentials",
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "torch>=2.0",
+    "scikit-learn>=1.3",
+    "dscribe>=2.1",
+    "ase>=3.22",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "click>=8.1",
+    "tqdm>=4.65",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+lshdp = "lsh.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/YOUR_USERNAME/lshdp"
+Repository = "https://github.com/YOUR_USERNAME/lshdp"
+
+[tool.setuptools.packages.find]
+include = ["lsh*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+title: "LSH-DP: Locality-Sensitive Hashing-Based Dataset Reduction for Deep Potential Training"
+message: "If you use this software, please cite the following paper."
+type: software
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/YOUR_USERNAME/lshdp"
+
+authors:
+  - family-names: Anmol
+  - family-names: Sirohi
+    given-names: Anuj Kumar
+  - family-names: Neha
+  - family-names: Jayadeva
+  - family-names: Kumar
+    given-names: Sandeep
+  - family-names: Karmakar
+    given-names: Tarak
+
+preferred-citation:
+  type: article
+  title: "Locality-Sensitive Hashing-Based Data Set Reduction for Deep Potential Training"
+  authors:
+    - family-names: Anmol
+    - family-names: Sirohi
+      given-names: Anuj Kumar
+    - family-names: Neha
+    - family-names: Jayadeva
+    - family-names: Kumar
+      given-names: Sandeep
+    - family-names: Karmakar
+      given-names: Tarak
+  journal: "Journal of Chemical Theory and Computation"
+  year: 2025
+  volume: 21
+  issue: 12
+  start: 6113
+  end: 6120
+  doi: "10.1021/acs.jctc.XXXXXXX"
