@@ -15,6 +15,7 @@ soap:
   sigma: 1.0          # Gaussian smearing width
   rbf: gto            # Radial basis function type (gto or polynomial)
   periodic: true      # Enable periodic boundary conditions
+  n_jobs: -1          # Parallel SOAP workers (-1 = all cores, 1 = serial)
   # species: null      # Auto-detected from trajectory; override as ["C", "H", "O"]
 
 # --- Hashing Parameters ---

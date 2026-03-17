@@ -38,6 +38,7 @@ def cli() -> None:
 @click.option("--output-dir", type=str, default=None, help="Override output directory.")
 @click.option("--start-step", type=click.IntRange(1, 7), default=None, help="Start from this pipeline step.")
 @click.option("--end-step", type=click.IntRange(1, 7), default=None, help="End at this pipeline step.")
+@click.option("--n-jobs", type=int, default=None, help="Parallel workers for SOAP (-1 = all cores).")
 def run(
     config: str,
     bin_width: Optional[float],
@@ -46,6 +47,7 @@ def run(
     output_dir: Optional[str],
     start_step: Optional[int],
     end_step: Optional[int],
+    n_jobs: Optional[int],
 ) -> None:
     """Run the LSH-DP pipeline."""
     # Build overrides dict
@@ -62,6 +64,8 @@ def run(
         overrides["start_step"] = start_step
     if end_step is not None:
         overrides["end_step"] = end_step
+    if n_jobs is not None:
+        overrides.setdefault("soap", {})["n_jobs"] = n_jobs
 
     cfg = load_config(config, overrides)
 

@@ -2,6 +2,7 @@ name: lshdp
 channels:
   - conda-forge
   - pytorch
+  - nvidia          # required for pytorch-cuda packages
   - defaults
 
 dependencies:
@@ -16,13 +17,31 @@ dependencies:
   # ASE & DScribe
   - ase>=3.22
 
-  # PyTorch — CPU by default; see comments below for GPU
+  # ── PyTorch ────────────────────────────────────────────────────────
+  # CPU-only install (default — safe on any machine):
   - pytorch>=2.0
-  - cpuonly  # REMOVE this line and uncomment pytorch-cuda for GPU support
+  - cpuonly
 
-  # Uncomment ONE of the following for GPU support:
-  # - pytorch-cuda=11.8   # For CUDA 11.8
-  # - pytorch-cuda=12.1   # For CUDA 12.1
+  # ── FOR GPU: comment out the two lines above and uncomment ONE of
+  #    the blocks below matching your CUDA driver version.
+  #
+  #    Check your driver version with: nvidia-smi
+  #    CUDA 11.8 drivers: >=520.61.05
+  #    CUDA 12.1 drivers: >=530.30.02
+  #    CUDA 12.4 drivers: >=550.54.14
+  #
+  # --- CUDA 11.8 ---
+  # - pytorch>=2.0
+  # - pytorch-cuda=11.8
+  #
+  # --- CUDA 12.1 ---
+  # - pytorch>=2.0
+  # - pytorch-cuda=12.1
+  #
+  # --- CUDA 12.4 ---
+  # - pytorch>=2.0
+  # - pytorch-cuda=12.4
+  # ────────────────────────────────────────────────────────────────────
 
   - pip
 

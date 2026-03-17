@@ -77,7 +77,7 @@ def run_pipeline(cfg: PipelineConfig) -> None:
         )
         logger.info("Frames detected: %d", len(frames))
 
-        compute_soap_descriptors(frames, cfg.soap, descriptor_folder, device=device)
+        compute_soap_descriptors(frames, cfg.soap, descriptor_folder)
         timings["step1_soap"] = time.time() - t0
         logger.info("Step 1 completed in %.1f s", timings["step1_soap"])
 

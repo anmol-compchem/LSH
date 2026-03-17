@@ -27,6 +27,7 @@ class SOAPConfig:
     rbf: str = "gto"
     periodic: bool = True
     species: Optional[list[str]] = None  # auto-detected if None
+    n_jobs: int = 1  # parallel workers for SOAP (use -1 for all cores)
 
 
 @dataclass
@@ -187,6 +188,7 @@ def save_example_config(path: str) -> None:
             "sigma": 1.0,
             "rbf": "gto",
             "periodic": True,
+            "n_jobs": -1,
         },
         "hashing": {
             "n_components": 100,
