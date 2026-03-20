@@ -29,9 +29,18 @@ hashing:
 io:
   input_file: simulation.xyz   # Input trajectory (any ASE-readable format)
   output_dir: results          # Output directory
-  format: auto                 # File format hint (auto, xyz, extxyz, lammpstrj, cif, etc.)
+  format: auto                 # Input format hint (auto, xyz, extxyz, lammps-dump-text, cif, etc.)
+  output_format: extxyz        # Output format (extxyz, xyz, lammps-data, cif, vasp, etc.)
   # cell: [15.82, 15.82, 30.76]  # Override unit cell (optional)
   # pbc: true                     # Override PBC flag (optional)
+
+# --- Frame Selection ---
+selection:
+  method: medoid     # How to pick representative frames per bin:
+                     #   first  — first frame in bin (fast, naive)
+                     #   random — random frame per bin
+                     #   medoid — frame closest to bin centroid in descriptor space (best quality)
+  random_seed: 42    # Seed for 'random' method
 
 # --- Splitting ---
 split:
@@ -40,6 +49,6 @@ split:
 # --- Execution ---
 device: auto                   # cpu, cuda, or auto
 deterministic: true            # Enforce deterministic behaviour
-# start_step: 1                # Start from step N (1-7)
-# end_step: 7                  # End at step N (1-7)
+# start_step: 1                # Start from step N (1-6)
+# end_step: 6                  # End at step N (1-6)
 # log_file: null               # Auto-generated if null

@@ -36,9 +36,11 @@ def cli() -> None:
 @click.option("--device", type=click.Choice(["cpu", "cuda", "auto"]), default=None, help="Override compute device.")
 @click.option("--input-file", type=str, default=None, help="Override input trajectory file.")
 @click.option("--output-dir", type=str, default=None, help="Override output directory.")
-@click.option("--start-step", type=click.IntRange(1, 7), default=None, help="Start from this pipeline step.")
-@click.option("--end-step", type=click.IntRange(1, 7), default=None, help="End at this pipeline step.")
+@click.option("--start-step", type=click.IntRange(1, 6), default=None, help="Start from this pipeline step.")
+@click.option("--end-step", type=click.IntRange(1, 6), default=None, help="End at this pipeline step.")
 @click.option("--n-jobs", type=int, default=None, help="Parallel workers for SOAP (-1 = all cores).")
+@click.option("--output-format", type=str, default=None, help="Output format (extxyz, xyz, lammps-data, cif, vasp, etc.).")
+@click.option("--selection", type=click.Choice(["first", "random", "medoid"]), default=None, help="Frame selection method per bin.")
 def run(
     config: str,
     bin_width: Optional[float],
@@ -48,6 +50,8 @@ def run(
     start_step: Optional[int],
     end_step: Optional[int],
     n_jobs: Optional[int],
+    output_format: Optional[str],
+    selection: Optional[str],
 ) -> None:
     """Run the LSH-DP pipeline."""
     # Build overrides dict
@@ -66,6 +70,10 @@ def run(
         overrides["end_step"] = end_step
     if n_jobs is not None:
         overrides.setdefault("soap", {})["n_jobs"] = n_jobs
+    if output_format is not None:
+        overrides.setdefault("io", {})["output_format"] = output_format
+    if selection is not None:
+        overrides.setdefault("selection", {})["method"] = selection
 
     cfg = load_config(config, overrides)
 

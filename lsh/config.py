@@ -44,8 +44,9 @@ class IOConfig:
     """Input / output paths and format settings."""
     input_file: str = "simulation.xyz"
     output_dir: str = "results"
-    format: str = "auto"  # "auto" lets ASE detect
-    cell: Optional[list[float]] = None  # override cell, e.g. [15.82, 15.82, 30.76]
+    format: str = "auto"  # "auto" lets ASE detect; use "gro" for GROMACS, "lammps-dump-text" for LAMMPS dumps
+    output_format: str = "extxyz"  # output format for extracted frames
+    cell: Optional[list[float]] = None  # override cell — use ONLY for formats missing cell info
     pbc: Optional[bool] = None  # override PBC flag
 
 
@@ -56,16 +57,24 @@ class SplitConfig:
 
 
 @dataclass
+class SelectionConfig:
+    """Frame selection strategy within each LSH bin."""
+    method: str = "medoid"  # "first", "random", or "medoid"
+    random_seed: int = 42  # seed for "random" method
+
+
+@dataclass
 class PipelineConfig:
     """Top-level pipeline configuration."""
     soap: SOAPConfig = field(default_factory=SOAPConfig)
     hashing: HashingConfig = field(default_factory=HashingConfig)
     io: IOConfig = field(default_factory=IOConfig)
     split: SplitConfig = field(default_factory=SplitConfig)
+    selection: SelectionConfig = field(default_factory=SelectionConfig)
     device: str = "auto"  # "cpu", "cuda", "auto"
     deterministic: bool = True
     start_step: int = 1
-    end_step: int = 7
+    end_step: int = 6
     log_file: Optional[str] = None  # auto-generated if None
 
 
@@ -124,16 +133,18 @@ def load_config(config_path: Optional[str] = None, overrides: Optional[dict[str,
     hash_cfg = _dataclass_from_dict(HashingConfig, raw.get("hashing", {}))
     io_cfg = _dataclass_from_dict(IOConfig, raw.get("io", {}))
     split_cfg = _dataclass_from_dict(SplitConfig, raw.get("split", {}))
+    sel_cfg = _dataclass_from_dict(SelectionConfig, raw.get("selection", {}))
 
     cfg = PipelineConfig(
         soap=soap_cfg,
         hashing=hash_cfg,
         io=io_cfg,
         split=split_cfg,
+        selection=sel_cfg,
         device=raw.get("device", "auto"),
         deterministic=raw.get("deterministic", True),
         start_step=raw.get("start_step", 1),
-        end_step=raw.get("end_step", 7),
+        end_step=raw.get("end_step", 6),
         log_file=raw.get("log_file", None),
     )
     return cfg
@@ -166,14 +177,16 @@ def validate_config(cfg: PipelineConfig) -> list[str]:
         issues.append("hashing.bin_width must be positive")
     if cfg.device not in ("cpu", "cuda", "auto"):
         issues.append(f"device must be 'cpu', 'cuda', or 'auto'; got '{cfg.device}'")
-    if not (1 <= cfg.start_step <= 7):
-        issues.append("start_step must be between 1 and 7")
-    if not (1 <= cfg.end_step <= 7):
-        issues.append("end_step must be between 1 and 7")
+    if not (1 <= cfg.start_step <= 6):
+        issues.append("start_step must be between 1 and 6")
+    if not (1 <= cfg.end_step <= 6):
+        issues.append("end_step must be between 1 and 6")
     if cfg.start_step > cfg.end_step:
         issues.append("start_step cannot be greater than end_step")
     if cfg.split.frames_per_file < 1:
         issues.append("split.frames_per_file must be >= 1")
+    if cfg.selection.method not in ("first", "random", "medoid"):
+        issues.append(f"selection.method must be 'first', 'random', or 'medoid'; got '{cfg.selection.method}'")
 
     return issues
 
@@ -200,9 +213,14 @@ def save_example_config(path: str) -> None:
             "input_file": "simulation.xyz",
             "output_dir": "results",
             "format": "auto",
+            "output_format": "extxyz",
         },
         "split": {
             "frames_per_file": 120,
+        },
+        "selection": {
+            "method": "medoid",
+            "random_seed": 42,
         },
         "device": "auto",
         "deterministic": True,

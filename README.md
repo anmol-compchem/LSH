@@ -1,40 +1,54 @@
-# LSH-DP
+# LSH-DP: Locality-Sensitive Hashing Dataset Reduction for Deep Potential Training
 
-Locality-Sensitive Hashing-Based Dataset Reduction for Deep Potential Training.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> Anmol, Anuj Kumar Sirohi, Neha, Jayadeva, Sandeep Kumar, and Tarak Karmakar.
-> *J. Chem. Theory Comput.* **2025**, 21 (12), 6113–6120.
+A production-ready Python package implementing the LSH-based dataset reduction algorithm for training deep potentials from molecular dynamics trajectories.
+
+## Reference
+
+> **Locality-Sensitive Hashing-Based Data Set Reduction for Deep Potential Training**
+> Anmol, Anuj Kumar Sirohi, Neha, Jayadeva, Sandeep Kumar, and Tarak Karmakar
+> *J. Chem. Theory Comput.* **2025**, 21, 12, 6113–6120
+
+This software is a faithful implementation of the algorithm described in the above publication. The scientific logic and mathematical formulation are preserved exactly.
+
+---
+
+## Features
+
+- **SOAP descriptors** via DScribe with fully configurable parameters
+- **Locality-Sensitive Hashing** with PCA dimensionality reduction
+- **GPU acceleration** (optional) for tensor operations via PyTorch
+- **Universal trajectory support** — any format readable by ASE (XYZ, extXYZ, LAMMPS, CIF, POSCAR, …)
+- **YAML configuration** — no hard-coded parameters
+- **Professional CLI** with `lshdp run`, `lshdp info`, `lshdp cite`
+- **Structured logging** with per-step timing and hardware metadata
+- **Reproducible** — deterministic seeding and optional strict mode
+- **Step-wise execution** — start/resume from any pipeline step
 
 ---
 
 ## Installation
 
-### CPU
+### 1. Create the conda environment
 
 ```bash
 conda env create -f environment.yml
 conda activate lshdp
-pip install -e .
 ```
 
-### GPU
+**For GPU support**, edit `environment.yml` before creating the environment:
+- Remove the `- cpuonly` line
+- Uncomment the appropriate `pytorch-cuda` line for your CUDA version
 
-Pre-built environment files with PyTorch CUDA via pip (avoids conda channel conflicts):
+### 2. Install the package
 
 ```bash
-# CUDA 12.1 (driver >= 530.30.02)
-conda env create -f environment-gpu-cu121.yml
-
-# CUDA 11.8 (driver >= 520.61.05)
-conda env create -f environment-gpu-cu118.yml
-
-conda activate lshdp-gpu
 pip install -e .
 ```
 
-Check your driver version with `nvidia-smi`. The CUDA version in the top-right corner is the maximum supported — pick an environment file at or below that version.
-
-### Verify
+### 3. Verify
 
 ```bash
 lshdp info
@@ -42,31 +56,45 @@ lshdp info
 
 ---
 
-## Usage
+## Quick Start
+
+### Generate an example config
 
 ```bash
-# Generate example config
 lshdp init-config -o config.yaml
+```
 
-# Run full pipeline
+### Edit `config.yaml`
+
+Set your input file, SOAP parameters, and output directory.
+
+### Run the full pipeline
+
+```bash
 lshdp run --config config.yaml
+```
 
-# CLI overrides
-lshdp run --config config.yaml --bin-width 0.01 --device cuda --n-jobs 16
+### With CLI overrides
 
-# Run specific steps
+```bash
+lshdp run --config config.yaml --bin-width 0.01 --device cuda
+```
+
+### Run specific steps
+
+```bash
+# Only steps 1-4
 lshdp run --config config.yaml --start-step 1 --end-step 4
 
 # Resume from step 5
 lshdp run --config config.yaml --start-step 5
-
-# Validate config
-lshdp validate config.yaml
 ```
 
 ---
 
 ## Configuration
+
+All parameters are specified in a YAML file:
 
 ```yaml
 soap:
@@ -76,7 +104,6 @@ soap:
   sigma: 1.0
   rbf: gto
   periodic: true
-  n_jobs: -1          # parallel SOAP workers (-1 = all cores)
 
 hashing:
   n_components: 100
@@ -88,54 +115,154 @@ io:
   input_file: simulation.xyz
   output_dir: results
   format: auto
-  # cell: [15.82, 15.82, 30.76]
-  # pbc: true
 
 split:
   frames_per_file: 120
 
-device: auto          # cpu, cuda, or auto
+device: auto
 deterministic: true
 ```
 
-`n_jobs` controls parallel SOAP computation: `1` = serial, `8`/`16` = fixed worker count, `-1` = all cores. For large trajectories (>50k frames), `n_jobs: 16` often outperforms `-1` due to lower serialization overhead.
+Validate your config:
+
+```bash
+lshdp validate config.yaml
+```
 
 ---
 
-## Pipeline
+## GPU Support
 
-| Step | Description |
-|------|-------------|
-| 1 | Compute SOAP descriptors (parallel via DScribe) |
-| 2 | Flatten → PCA → LSH hashing → buckets |
-| 3 | Organise frames into bins |
-| 4 | Extract representative frame numbers |
-| 5 | Update XYZ metadata |
-| 6 | Extract selected frames |
-| 7 | Split trajectory into parts |
+Set `device: cuda` in config or use the CLI flag:
 
-GPU acceleration (`device: cuda`) applies to Step 2 (normalization, random projection, hashing). SOAP computation (Step 1) is CPU-parallelized via joblib.
+```bash
+lshdp run --config config.yaml --device cuda
+```
+
+Use `device: auto` (default) to automatically use CUDA when available.
+
+GPU is used for:
+- Tensor normalization
+- Random projection matrix generation
+- Hash value computation
+- Matrix multiplications
 
 ---
 
-## Supported Formats
+## Supported Trajectory Formats
 
-Any format readable by ASE: XYZ, extended XYZ, LAMMPS (`.lammpstrj`), CIF, VASP (`POSCAR`/`CONTCAR`), PDB, and others. Set `format: auto` for detection or specify explicitly.
+Any format supported by ASE's `ase.io.read()`:
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| XYZ | `.xyz` | Standard and extended |
+| Extended XYZ | `.extxyz` | With properties |
+| LAMMPS | `.lammpstrj` | Trajectory dumps |
+| CIF | `.cif` | Crystallographic |
+| VASP | `POSCAR`, `CONTCAR` | VASP structures |
+| Protein Data Bank | `.pdb` | Biomolecular |
+
+Set `format: auto` for automatic detection, or specify explicitly.
+
+Cell and PBC can be overridden in the config:
+
+```yaml
+io:
+  cell: [15.82, 15.82, 30.76]
+  pbc: true
+```
+
+---
+
+## Pipeline Steps
+
+| Step | Module | Description |
+|------|--------|-------------|
+| 1 | `descriptors` | Compute SOAP descriptors |
+| 2 | `hashing` | Flatten → PCA → LSH → Buckets |
+| 3 | `hashing` | Organise frames into bins |
+| 4 | `io` | Extract representative frame numbers |
+| 5 | `io` | Update XYZ metadata |
+| 6 | `io` | Extract selected frames |
+| 7 | `io` | Split trajectory into parts |
+
+---
+
+## Logging
+
+Every run produces a detailed log file in the output directory:
+
+```
+results/lshdp_run_20250227_143000.log
+```
+
+Includes: hardware info, configuration, per-step timings, PCA variance retained, bin statistics.
+
+---
+
+## CLI Commands
+
+```
+lshdp run          Run the pipeline
+lshdp validate     Validate a config file
+lshdp info         Show version and environment
+lshdp cite         Print citation info
+lshdp init-config  Generate example config
+```
+
+---
+
+## Testing
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+## Project Structure
+
+```
+lshdp/
+├── lsh/
+│   ├── __init__.py          # Package metadata
+│   ├── cli.py               # Click CLI
+│   ├── config.py            # YAML config management
+│   ├── logging_utils.py     # Structured logging
+│   ├── banner.py            # Startup banner
+│   ├── io/
+│   │   └── __init__.py      # Trajectory I/O, XYZ utils
+│   ├── descriptors/
+│   │   └── __init__.py      # SOAP calculation
+│   ├── hashing/
+│   │   └── __init__.py      # LSH, PCA, binning
+│   ├── pipeline/
+│   │   └── __init__.py      # Pipeline orchestrator
+│   └── utils/
+│       └── __init__.py      # Device & seed helpers
+├── tests/
+│   ├── conftest.py
+│   ├── test_config.py
+│   ├── test_hashing.py
+│   └── test_io.py
+├── environment.yml
+├── pyproject.toml
+├── config.yaml              # Example config
+├── CITATION.cff
+├── LICENSE
+└── README.md
+```
 
 ---
 
 ## Citation
 
-```bibtex
-@article{anmol2025lshdp,
-  author  = {Anmol and Sirohi, Anuj Kumar and Neha and Jayadeva and Kumar, Sandeep and Karmakar, Tarak},
-  title   = {Locality-Sensitive Hashing-Based Data Set Reduction for Deep Potential Training},
-  journal = {J. Chem. Theory Comput.},
-  year    = {2025},
-  volume  = {21},
-  number  = {12},
-  pages   = {6113--6120}
-}
+If you use this software, please cite:
+
+```
+Anmol, Anuj Kumar Sirohi, Neha, Jayadeva, Sandeep Kumar, Tarak Karmakar,
+"Locality-Sensitive Hashing-Based Data Set Reduction for Deep Potential Training",
+J. Chem. Theory Comput. 2025, 21, 12, 6113–6120.
 ```
 
 ```bash
@@ -144,6 +271,12 @@ lshdp cite
 
 ---
 
+## Reproducibility Statement
+
+This implementation preserves the exact algorithmic workflow and mathematical formulation described in the original publication. The refactoring applies only to software engineering aspects: packaging, configuration, interfaces, logging, and optional GPU acceleration. Scientific results are reproducible with `deterministic: true` and a fixed `random_seed`.
+
+---
+
 ## License
 
-MIT
+MIT License. See [LICENSE](LICENSE).

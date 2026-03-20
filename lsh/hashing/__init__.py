@@ -31,6 +31,11 @@ def flatten_and_stack_descriptors(
     """
     Load per-frame ``.npy`` descriptor files, flatten each, and stack.
 
+    If frames have different atom counts (and thus different flattened
+    descriptor lengths), shorter vectors are zero-padded to match the
+    longest.  This can happen with grand-canonical trajectories or
+    trajectories with variable composition.
+
     Parameters
     ----------
     descriptor_folder : str
@@ -43,20 +48,46 @@ def flatten_and_stack_descriptors(
     Returns
     -------
     torch.Tensor
-        Shape ``(n_frames, flattened_dim)``.
+        Shape ``(n_frames, max_flattened_dim)``.
     """
     logger = get_logger()
-    files = sorted([f for f in os.listdir(descriptor_folder) if f.endswith(".npy")])
+    files = [f for f in os.listdir(descriptor_folder) if f.endswith(".npy")]
     if not files:
         raise FileNotFoundError(f"No .npy files found in {descriptor_folder}")
 
-    flattened: list[torch.Tensor] = []
+    # Natural numeric sort: descriptor_frame_1, _2, ... _10, _11 (not lexicographic)
+    import re
+    def _frame_number(fname: str) -> int:
+        m = re.search(r"(\d+)\.npy$", fname)
+        return int(m.group(1)) if m else 0
+
+    files.sort(key=_frame_number)
+
+    # First pass: flatten and find max dimension
+    flattened_arrays: list[np.ndarray] = []
     for fname in files:
         arr = np.load(os.path.join(descriptor_folder, fname))
-        vec = torch.FloatTensor(arr.flatten())
-        flattened.append(vec)
+        flattened_arrays.append(arr.flatten())
 
-    combined = torch.stack(flattened, dim=0).to(device)
+    lengths = {len(a) for a in flattened_arrays}
+    max_dim = max(lengths)
+
+    if len(lengths) > 1:
+        logger.warning(
+            "Descriptor dimensions vary (%s unique sizes, max=%d). "
+            "Padding shorter descriptors with zeros.",
+            len(lengths), max_dim,
+        )
+        padded = []
+        for arr in flattened_arrays:
+            if len(arr) < max_dim:
+                arr = np.pad(arr, (0, max_dim - len(arr)), mode="constant")
+            padded.append(torch.FloatTensor(arr))
+        flattened_tensors = padded
+    else:
+        flattened_tensors = [torch.FloatTensor(a) for a in flattened_arrays]
+
+    combined = torch.stack(flattened_tensors, dim=0).to(device)
     logger.info("Combined descriptor tensor shape: %s", tuple(combined.shape))
 
     os.makedirs(save_path, exist_ok=True)
@@ -93,11 +124,19 @@ def reduce_dimensionality(
         Reduced tensor of shape ``(n_frames, n_components)``.
     """
     logger = get_logger()
-    pca = PCA(n_components=n_components)
+    n_samples, n_features = tensor.shape
+    actual_components = min(n_components, n_samples, n_features)
+    if actual_components < n_components:
+        logger.warning(
+            "PCA: requested %d components but data has %d samples × %d features; "
+            "clamping to %d",
+            n_components, n_samples, n_features, actual_components,
+        )
+    pca = PCA(n_components=actual_components)
     reduced_np = pca.fit_transform(tensor.cpu().numpy())
 
     variance_retained = float(np.sum(pca.explained_variance_ratio_))
-    logger.info("PCA: %d components, variance retained: %.4f", n_components, variance_retained)
+    logger.info("PCA: %d components, variance retained: %.4f", actual_components, variance_retained)
 
     os.makedirs(save_path, exist_ok=True)
     np.save(os.path.join(save_path, f"reduced_tensor_{n_components}.npy"), reduced_np)

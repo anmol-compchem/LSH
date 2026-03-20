@@ -12,7 +12,7 @@ Usage:
     lshdp cite
 """
 
-__version__ = "1.0.0"
+__version__ = "1.3.0"
 __author__ = "Anmol, Anuj Kumar Sirohi, Neha, Jayadeva, Sandeep Kumar, Tarak Karmakar"
 __citation__ = (
     "Anmol, Anuj Kumar Sirohi, Neha, Jayadeva, Sandeep Kumar, Tarak Karmakar, "
