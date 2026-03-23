@@ -27,7 +27,7 @@ class SOAPConfig:
     rbf: str = "gto"
     periodic: bool = True
     species: Optional[list[str]] = None  # auto-detected if None
-    n_jobs: int = 1  # parallel workers for SOAP (use -1 for all cores)
+    n_jobs: int = -1  # parallel workers for SOAP (-1 = all cores)
 
 
 @dataclass
@@ -224,6 +224,8 @@ def save_example_config(path: str) -> None:
         },
         "device": "auto",
         "deterministic": True,
+        "start_step": 1,
+        "end_step": 6,
     }
     with open(path, "w") as fh:
         yaml.dump(example, fh, default_flow_style=False, sort_keys=False)

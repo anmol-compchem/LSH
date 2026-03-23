@@ -122,7 +122,11 @@ def info() -> None:
     click.echo(f"LSH-DP v{__version__}")
     click.echo(f"Python   : {platform.python_version()}")
     click.echo(f"PyTorch  : {torch.__version__}")
-    click.echo(f"CUDA     : {'available (' + torch.cuda.get_device_name(0) + ')' if torch.cuda.is_available() else 'not available'}")
+    try:
+        cuda_info = f"available ({torch.cuda.get_device_name(0)})" if torch.cuda.is_available() else "not available"
+    except RuntimeError:
+        cuda_info = "driver present but no GPU accessible"
+    click.echo(f"CUDA     : {cuda_info}")
     click.echo(f"Platform : {platform.platform()}")
 
 

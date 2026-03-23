@@ -29,6 +29,48 @@ from lsh.logging_utils import get_logger
 
 
 # ---------------------------------------------------------------------------
+# Safe trajectory writer
+# ---------------------------------------------------------------------------
+def _write_frames(
+    output_file: str,
+    frames: list[Atoms],
+    output_format: str,
+) -> None:
+    """
+    Write frames to file, with a safe plain-XYZ writer that uses controlled
+    coordinate formatting (``%14.8f``) to avoid column overflow in downstream
+    parsers like CP2K.
+
+    For all other formats, delegates to ASE's ``ase.io.write``.
+    """
+    if output_format == "xyz":
+        _write_plain_xyz(output_file, frames)
+    else:
+        ase_write(output_file, frames, format=output_format)
+
+
+def _write_plain_xyz(output_file: str, frames: list[Atoms]) -> None:
+    """
+    Write frames as plain XYZ with controlled float formatting.
+
+    ASE's built-in xyz writer uses Python's default float repr which
+    produces 15+ decimal places — this overflows fixed-width column
+    parsers in CP2K and other codes.  We use ``%14.8f`` to match
+    the precision of extXYZ output.
+    """
+    with open(output_file, "w") as fh:
+        for atoms in frames:
+            n = len(atoms)
+            fh.write(f"{n}\n")
+            comment = atoms.info.get("comment", "")
+            fh.write(f"{comment}\n")
+            symbols = atoms.get_chemical_symbols()
+            positions = atoms.get_positions()
+            for sym, (x, y, z) in zip(symbols, positions):
+                fh.write(f"{sym:>4s}  {x:14.8f}  {y:14.8f}  {z:14.8f}\n")
+
+
+# ---------------------------------------------------------------------------
 # Format helpers
 # ---------------------------------------------------------------------------
 _FORMAT_FROM_SUFFIX: dict[str, str] = {
@@ -96,8 +138,8 @@ def _format_to_extension(fmt: str) -> str:
 
 
 def _has_cell(atoms: Atoms) -> bool:
-    """Return True if atoms has a non-trivial cell (any non-zero component)."""
-    return atoms.cell.any()
+    """Return True if atoms has a non-degenerate cell (non-zero volume)."""
+    return atoms.cell.any() and atoms.cell.volume > 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -386,8 +428,16 @@ def extract_frames(
         Number of frames written.
     """
     logger = get_logger()
-    selected = [frames[i] for i in frame_indices if i < len(frames)]
-    ase_write(output_file, selected, format=output_format)
+    n_total = len(frames)
+    out_of_range = [i for i in frame_indices if i >= n_total]
+    if out_of_range:
+        logger.warning(
+            "%d frame indices out of range (max=%d) — skipping: %s",
+            len(out_of_range), n_total - 1,
+            out_of_range[:10] if len(out_of_range) > 10 else out_of_range,
+        )
+    selected = [frames[i] for i in frame_indices if i < n_total]
+    _write_frames(output_file, selected, output_format)
     logger.info(
         "Extracted %d frames → %s (format=%s)",
         len(selected), output_file, output_format,
@@ -443,7 +493,7 @@ def split_trajectory(
         chunk = frames[start : start + frames_per_file]
         file_index += 1
         out_path = os.path.join(output_dir, f"part_{file_index}{ext}")
-        ase_write(out_path, chunk, format=output_format)
+        _write_frames(out_path, chunk, output_format)
         logger.info("Written %s with %d frames", out_path, len(chunk))
 
     logger.info("Split complete: %d files in %s", file_index, output_dir)

@@ -181,12 +181,13 @@ def partition(
     list_bin_width: list[float],
     bin_values: torch.Tensor,
     no_of_hash: int,
-    random_seed: int = 42,
 ) -> dict[float, dict[int, int]]:
     """
     Partition hashed values into clusters / buckets.
 
     Algorithm is identical to the original implementation.
+    Bias generation uses Python's global ``random`` module, which must
+    be seeded beforehand via ``set_seed()`` for reproducibility.
 
     Parameters
     ----------
@@ -196,8 +197,6 @@ def partition(
         Hash-projected values.
     no_of_hash : int
         Number of hash functions.
-    random_seed : int
-        Seed (for bias generation).
 
     Returns
     -------
@@ -258,7 +257,7 @@ def process_with_hashing(
     bin_vals = hashed_values(combined_tensor, no_of_hash, combined_tensor.shape[1], device=device)
 
     # Partition
-    clusters = partition([bw], bin_vals, no_of_hash, random_seed=hashing_cfg.random_seed)
+    clusters = partition([bw], bin_vals, no_of_hash)
 
     # Stats
     unique = set()
